@@ -25,28 +25,33 @@ public class StoreArrivalTrigger : MonoBehaviour
 
         yield return new WaitForSeconds(2f);
 
-        // Aling Nena speaks
+        // Jami speaks
         DialogueManager.Instance.Say(
-            "Jami: Magsasara na kami. Anong kailangan mo?");
+            "Jami: Uy long time no see, ser.");
+
+        yield return new WaitForSeconds(1f);
+
+        DialogueManager.Instance.Say(
+           "Jami: Papunta na ako sa bahay ni Jun. Sinasara ko lang yung tindahan.");
+
+        yield return new WaitForSeconds(1f);
+        
+        DialogueManager.Instance.Say(
+           "Jami: Anong kailangan mo?");
 
         yield return new WaitForSeconds(2f);
 
         // Officer thinks
         DialogueManager.Instance.Say(
-            "Chichirya lang, pampulutan.");
+            "Chichirya lang, pandagdag pulutan.");
         
-        yield return new WaitForSeconds(1f);
-
-        DialogueManager.Instance.Say(
-           "Ay... hindi ko alam kung anong gustong brand ni Jun.");
-
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(7f);
 
         PhoneManager.Instance.ReceiveMessage(
-            "Sendan mo na lang ako ng picture kung anong meron sila.");
+            "Picturan mo kung anong meron sila.");
 
         NotificationManager.Instance.ShowNotification(
-            "Sendan mo na lang ako ng picture kung anong meron sila.");
+            "Picturan mo kung anong meron sila", NotificationSender.Jun);
 
         yield return new WaitForSeconds(2f);
 

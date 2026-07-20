@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class MessageTrigger : MonoBehaviour
 {
+    [Header("Completion")]
+    public bool completeCurrentObjective;
     [System.Serializable]
     public class ChatMessage
     {
@@ -18,7 +20,14 @@ public class MessageTrigger : MonoBehaviour
     public string storyEvent;
 
     [Header("Conversation")]
-    public List<ChatMessage> messages = new List<ChatMessage>();
+    public List<ChatMessage> messages = new();
+   
+    [Header("Dialogue")]
+
+    [TextArea]
+    public string dialogue;
+
+    public float dialogueDelay = 2f;
 
     [Header("Objective")]
     public string objectiveID;
@@ -32,6 +41,7 @@ public class MessageTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log("Entered by: " + other.name);
         if (triggered)
             return;
 
@@ -45,10 +55,17 @@ public class MessageTrigger : MonoBehaviour
 
     IEnumerator SendConversation()
     {
+        if (!string.IsNullOrEmpty(dialogue))
+        {
+            DialogueManager.Instance.Say(dialogue);
+
+            yield return new WaitForSeconds(dialogueDelay);
+        }
+
         foreach (ChatMessage chat in messages)
         {
             PhoneManager.Instance.ReceiveMessage(chat.message);
-            NotificationManager.Instance.ShowNotification(chat.message);
+            NotificationManager.Instance.ShowNotification(chat.message, NotificationSender.Jun);
 
             yield return new WaitForSeconds(chat.delayAfter);
         }
@@ -60,8 +77,14 @@ public class MessageTrigger : MonoBehaviour
                 objectiveText);
         }
 
+        if (completeCurrentObjective)
+        {
+            ObjectiveManager.Instance.CompleteObjective();
+        }
+
         if (!string.IsNullOrEmpty(storyEvent))
         {
+            Debug.Log("Triggering story event: " + storyEvent);
             StoryManager.Instance.TriggerEvent(storyEvent);
         }
     }

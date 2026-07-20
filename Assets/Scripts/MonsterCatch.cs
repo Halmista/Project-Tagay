@@ -16,6 +16,17 @@ public class MonsterCatch : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
+        PlayerLives lives = other.GetComponent<PlayerLives>();
+
+        if (lives != null)
+        {
+            if (!lives.TakeHit())
+            {
+                // Player still has lives remaining
+                return;
+            }
+        }
+
         CharacterController controller = other.GetComponent<CharacterController>();
 
         if (controller != null)
@@ -27,7 +38,6 @@ public class MonsterCatch : MonoBehaviour
         if (controller != null)
             controller.enabled = true;
 
-        // Stop the monster from chasing
         monster.StopChasing();
     }
 }

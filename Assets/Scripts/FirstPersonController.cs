@@ -4,10 +4,12 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class FirstPersonController : MonoBehaviour
 {
+    [Header("Camera Movement")]
+    public float cameraMoveMultiplier = 0.6f;
     public bool CanMove { get; private set; } = true;
     [Header("Movement")]
-    public float walkSpeed = 2.8f;
-    public float sprintSpeed = 4.8f;
+    public float walkSpeed = 1.5f;
+    public float sprintSpeed = 3f;
     public float gravity = -9.81f;
 
     [Header("Mouse Look")]
@@ -123,8 +125,21 @@ public class FirstPersonController : MonoBehaviour
             transform.right * moveInput.x +
             transform.forward * moveInput.y;
 
-        float speed = sprintHeld ? sprintSpeed : walkSpeed;
+        //float speed = sprintHeld ? sprintSpeed : walkSpeed;
+        bool cameraOpen =
+            CameraManager.Instance != null &&
+            CameraManager.Instance.CameraOpen;
 
+        // Sprint is disabled while the camera is up
+        float speed = (!cameraOpen && sprintHeld)
+            ? sprintSpeed
+            : walkSpeed;
+
+        // Slow movement while using the camera
+        if (cameraOpen)
+        {
+            speed *= cameraMoveMultiplier;
+        }
         controller.Move(move * speed * Time.deltaTime);
 
         if (controller.isGrounded && velocity.y < 0)
@@ -137,10 +152,10 @@ public class FirstPersonController : MonoBehaviour
         {
             float animationSpeed = moveInput.magnitude;
 
-            if (sprintHeld && animationSpeed > 0)
-                animationSpeed = 2f;   // Running
+            if (!cameraOpen && sprintHeld && animationSpeed > 0)
+                animationSpeed = 2f;
             else if (animationSpeed > 0)
-                animationSpeed = 1f;   // Walking
+                animationSpeed = 1f;
 
             animator.SetFloat("Speed", animationSpeed);
         }

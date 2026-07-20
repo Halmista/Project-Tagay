@@ -1,5 +1,7 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 public class CameraManager : MonoBehaviour
 {
@@ -30,6 +32,23 @@ public class CameraManager : MonoBehaviour
 
     public KeyCode cameraKey = KeyCode.C;
 
+    [Header("Battery")]
+    public float battery = 100f;
+    public float drainPerSecond = 0.2f;
+    public float photoCost = 2f;
+
+    public float BatteryPercent => battery;
+
+    [Header("Battery UI")]
+    public Image batteryIcon;
+    public TMP_Text batteryText;
+
+    public Sprite batteryFull;
+    public Sprite battery75;
+    public Sprite battery50;
+    public Sprite battery25;
+    public Sprite batteryEmpty;
+
     public bool CameraOpen { get; private set; }
 
     private bool isAnimating;
@@ -45,6 +64,8 @@ public class CameraManager : MonoBehaviour
         cameraUI.localEulerAngles = new Vector3(0, 0, hiddenRotation);
         cameraFlashlight.enabled = false;
         normalIntensity = cameraFlashlight.intensity;
+
+        UpdateBatteryUI();
     }
 
     void Update()
@@ -61,6 +82,26 @@ public class CameraManager : MonoBehaviour
         if (CameraOpen && Input.GetMouseButtonDown(0))
         {
             TakePhoto();
+        }
+
+        if (CameraOpen && battery > 0f)
+        {
+            battery -= drainPerSecond * Time.deltaTime;
+
+            battery = Mathf.Clamp(battery, 0f, 100f);
+
+            UpdateBatteryUI();
+
+            if (battery <= 0f)
+            {
+                ToggleCamera();
+            }
+        }
+
+        if (!CameraOpen)
+        {
+            if (battery <= 0f)
+                return;
         }
     }
 
@@ -124,41 +165,29 @@ public class CameraManager : MonoBehaviour
     }
     void UpdateFocus()
     {
-        bool targetDetected = false;
         currentTarget = null;
-        foreach (Monster monster in Monster.ActiveMonsters)
+
+        Ray ray = playerCamera.ViewportPointToRay(
+            new Vector3(0.5f, 0.5f));
+
+        if (Physics.Raycast(ray, out RaycastHit hit, photoRange, photoLayer))
         {
-        if (monster.photoTarget == null)
-                continue;
+            PhotoTarget target = hit.collider.GetComponent<PhotoTarget>();
 
-            Vector3 viewportPos =
-                playerCamera.WorldToViewportPoint(monster.photoTarget.position);
-
-            if (viewportPos.z <= 0)
-                continue;
-
-            float distance = Vector3.Distance(
-                playerCamera.transform.position,
-                monster.photoTarget.position);
-
-            if (distance > photoRange)
-                continue;
-
-            float offset = Vector2.Distance(
-                new Vector2(viewportPos.x, viewportPos.y),
-                new Vector2(0.5f, 0.5f));
-
-            float photoDistance = 2.25f;
-
-            if (offset < 0.15f && distance <= photoDistance)
+            if (target != null)
             {
-                targetDetected = true;
-                currentTarget = monster;
+                whiteFocus.SetActive(false);
+                redFocus.SetActive(true);
+
+                if (target.monster != null)
+                    currentTarget = target.monster;
+
+                return;
             }
         }
 
-        whiteFocus.SetActive(!targetDetected);
-        redFocus.SetActive(targetDetected);
+        whiteFocus.SetActive(true);
+        redFocus.SetActive(false);
     }
     void Flash()
     {
@@ -179,6 +208,18 @@ public class CameraManager : MonoBehaviour
 
     void TakePhoto()
     {
+        if (battery <= 0f)
+            return;
+
+        battery -= photoCost;
+        battery = Mathf.Clamp(battery, 0f, 100f);
+        UpdateBatteryUI();
+
+        if (battery <= 0f)
+        {
+            ToggleCamera();
+            return;
+        }
         Flash();
 
         Ray ray = playerCamera.ViewportPointToRay(
@@ -195,5 +236,31 @@ public class CameraManager : MonoBehaviour
         //{
         //    currentTarget.Disperse();
         //}
+    }
+
+    void UpdateBatteryUI()
+    {
+        if (batteryText != null)
+            batteryText.text = Mathf.RoundToInt(battery) + "%";
+        if (batteryIcon == null)
+            return;
+
+        if (battery > 75f)
+            batteryIcon.sprite = batteryFull;
+        else if (battery > 50f)
+            batteryIcon.sprite = battery75;
+        else if (battery > 25f)
+            batteryIcon.sprite = battery50;
+        else if (battery > 0f)
+            batteryIcon.sprite = battery25;
+        else
+            batteryIcon.sprite = batteryEmpty;
+    }
+    public void RechargeBattery(float amount)
+    {
+        battery += amount;
+        battery = Mathf.Clamp(battery, 0f, 100f);
+
+        UpdateBatteryUI();
     }
 }

@@ -3,13 +3,20 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
+public enum NotificationSender
+{
+    Jun,
+    Unknown
+}
 public class NotificationManager : MonoBehaviour
 {
     public static NotificationManager Instance;
 
     [Header("UI")]
-    public RectTransform notificationPanel;
-    public TMP_Text messageText;
+    public RectTransform junPanel;
+    public RectTransform unknownPanel;
+    public TMP_Text junMessageText;
+    public TMP_Text unknownMessageText;
 
     [Header("Animation")]
     public float displayTime = 3f;
@@ -27,30 +34,54 @@ public class NotificationManager : MonoBehaviour
         else
             Destroy(gameObject);
 
-        notificationPanel.anchoredPosition = hiddenPosition;
+        junPanel.anchoredPosition = hiddenPosition;
+        unknownPanel.anchoredPosition = hiddenPosition;
     }
 
-    public void ShowNotification(string message)
+    public void ShowNotification(string message, NotificationSender sender)
     {
-        messageText.text = message;
+        Debug.Log($"Sender: {sender}");
+
+        Debug.Log($"Jun Panel: {junPanel}");
+        Debug.Log($"Unknown Panel: {unknownPanel}");
+        RectTransform panel;
+        TMP_Text text;
+
+        if (sender == NotificationSender.Jun)
+        {
+            panel = junPanel;
+            text = junMessageText;
+
+            unknownPanel.anchoredPosition = hiddenPosition;
+        }
+        else
+        {
+            panel = unknownPanel;
+            text = unknownMessageText;
+
+            junPanel.anchoredPosition = hiddenPosition;
+        }
+
+        text.text = message;
 
         if (currentRoutine != null)
             StopCoroutine(currentRoutine);
 
-        notificationPanel.DOKill();
+        panel.DOKill();
 
-        notificationPanel
+
+        panel
             .DOAnchorPos(visiblePosition, slideDuration)
             .SetEase(Ease.OutCubic);
 
-        currentRoutine = StartCoroutine(HideRoutine());
+        currentRoutine = StartCoroutine(HideRoutine(panel));
     }
 
-    IEnumerator HideRoutine()
+    IEnumerator HideRoutine(RectTransform panel)
     {
         yield return new WaitForSeconds(displayTime);
 
-        notificationPanel
+        panel
             .DOAnchorPos(hiddenPosition, slideDuration)
             .SetEase(Ease.InCubic);
 
@@ -62,9 +93,14 @@ public class NotificationManager : MonoBehaviour
         if (currentRoutine != null)
             StopCoroutine(currentRoutine);
 
-        notificationPanel.DOKill();
+        junPanel.DOKill();
+        unknownPanel.DOKill();
 
-        notificationPanel
+        junPanel
+            .DOAnchorPos(hiddenPosition, slideDuration)
+            .SetEase(Ease.InCubic);
+
+        unknownPanel
             .DOAnchorPos(hiddenPosition, slideDuration)
             .SetEase(Ease.InCubic);
 

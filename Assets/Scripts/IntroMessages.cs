@@ -14,7 +14,7 @@ public class IntroMessages : MonoBehaviour
         public float delayAfter = 3f;
     }
 
-    public List<IntroMessage> messages = new List<IntroMessage>();
+    public List<IntroMessage> messages = new();
 
     public string startingObjectiveID;
 
@@ -27,7 +27,8 @@ public class IntroMessages : MonoBehaviour
         foreach (IntroMessage msg in messages)
         {
             PhoneManager.Instance.ReceiveMessage(msg.text);
-            NotificationManager.Instance.ShowNotification(msg.text);
+            NotificationManager.Instance.ShowNotification(msg.text,
+            NotificationSender.Jun);
 
             yield return new WaitForSeconds(msg.delayAfter);
         }

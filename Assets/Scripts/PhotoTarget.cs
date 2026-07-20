@@ -6,12 +6,40 @@ public class PhotoTarget : MonoBehaviour
 
     public string objectiveID;
 
+    public RevealZone revealZone;
+
+    public BodyBagBehaviour bodyBag;
+
     public void Photograph()
     {
-        if (monster != null)
-            monster.Disperse();
+        Debug.Log("Photographed: " + gameObject.name);
 
-        if (!string.IsNullOrEmpty(objectiveID) &&
+        if (revealZone != null)
+            revealZone.LockReveal();
+
+        // Special reaction for the body bag
+        if (bodyBag != null)
+        {
+            bodyBag.Squirm();
+        }
+
+        // Normal clue/body bag photo target
+        if (monster == null)
+        {
+            if (!string.IsNullOrEmpty(objectiveID) &&
+                ObjectiveManager.Instance.IsCurrentObjective(objectiveID))
+            {
+                ObjectiveManager.Instance.CompleteObjective();
+            }
+
+            return;
+        }
+
+        // Monster photo target
+        bool defeated = monster.Disperse();
+
+        if (defeated &&
+            !string.IsNullOrEmpty(objectiveID) &&
             ObjectiveManager.Instance.IsCurrentObjective(objectiveID))
         {
             ObjectiveManager.Instance.CompleteObjective();

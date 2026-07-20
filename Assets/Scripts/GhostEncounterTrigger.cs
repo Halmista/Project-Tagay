@@ -5,6 +5,7 @@ public class GhostEncounterTrigger : MonoBehaviour
 {
     public LightFlicker encounterStreetLight;
     public Monster ghost;
+    public FirstPersonController player;
 
     bool triggered;
 
@@ -25,6 +26,7 @@ public class GhostEncounterTrigger : MonoBehaviour
     {
         // Flicker the light first
         yield return StartCoroutine(encounterStreetLight.ScareFlicker());
+        ghost.SetPhotographable(false);
         ghost.gameObject.SetActive(true);
 
         yield return new WaitForSeconds(0.5f);
@@ -37,9 +39,9 @@ public class GhostEncounterTrigger : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         DialogueManager.Instance.Say(
-            "Ano yan...?"
+            "Tangina."
         );
-
+        player.SetMovement(false);
         yield return new WaitForSeconds(1f);
 
         DialogueManager.Instance.Say(
@@ -55,15 +57,17 @@ public class GhostEncounterTrigger : MonoBehaviour
         DialogueManager.Instance.Say(
             "Shet!"
         );
-
+        player.SetMovement(true);
         yield return new WaitForSeconds(1f);
         DialogueManager.Instance.Say(
             "Baka gumana yung camera??"
         );
 
         yield return new WaitForSeconds(2f);
-
+        player.GetComponent<PlayerLives>().ResetHits(1);
         ghost.StartChasing(GameObject.FindGameObjectWithTag("Player").transform);
+        ghost.SetPhotographable(true);
+        yield return new WaitForSeconds(3f);
 
         ObjectiveManager.Instance.SetObjective(
             "TakeGhostPhoto",

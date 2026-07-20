@@ -13,6 +13,7 @@ public class Monster : MonoBehaviour
     public ParticleSystem smoke;
     public Renderer[] renderers;
     public static List<Monster> ActiveMonsters = new();
+    Animator animator;
 
     public Transform model;
     private Vector3 originalLocalPos;
@@ -31,10 +32,24 @@ public class Monster : MonoBehaviour
     private float twitchTimer;
     private Vector3 visualOffset;
 
+    [Header("Photography")]
+    public bool canBePhotographed = true;
+    public int photosRemaining = 3;
+
+    [Header("Attack")]
+    public bool usesAttack = false;
+    public float attackRange = 1.8f;
+    public float attackCooldown = 2f;
+
+    float attackTimer;
+    bool attacking;
+
+    
     void Start()
     {
         baseY = transform.position.y;
         originalLocalPos = model.localPosition;
+        animator = model.GetComponent<Animator>();
     }
 
     void Update()
@@ -44,6 +59,20 @@ public class Monster : MonoBehaviour
         if (!chasing || player == null)
             return;
 
+        if (usesAttack)
+        {
+            attackTimer -= Time.deltaTime;
+
+            float distance = Vector3.Distance(transform.position, player.position);
+
+            if (distance <= attackRange)
+            {
+                if (!attacking && attackTimer <= 0f)
+                    StartCoroutine(AttackRoutine());
+
+                return;
+            }
+        }
         Vector3 target = player.position;
         target.y = baseY;
 
@@ -105,12 +134,22 @@ public class Monster : MonoBehaviour
     {
         player = target;
         chasing = true;
+
+        if (animator != null)
+            animator.SetBool("Chasing", true);
     }
 
     public void StopChasing()
     {
         chasing = false;
         player = null;
+
+        if (animator != null)
+            animator.SetBool("Chasing", false);
+    }
+    public void SetPhotographable(bool value)
+    {
+        canBePhotographed = value;
     }
     void OnEnable()
     {
@@ -121,20 +160,73 @@ public class Monster : MonoBehaviour
     {
         ActiveMonsters.Remove(this);
     }
-    public void Disperse()
+    public bool Disperse()
     {
+        if (!canBePhotographed)
+            return false;
+
+        photosRemaining--;
+        Debug.Log("Monster photographed. Photos remaining: " + photosRemaining);
+        // Monster survives
+        if (photosRemaining > 0)
+        {
+            if (animator != null)
+            {
+                animator.SetInteger("HitStage", 3 - photosRemaining);
+                animator.SetTrigger("Hit");
+                animator.SetBool("Chasing", false);
+            }
+
+            chasing = false;
+
+            StartCoroutine(ResumeChaseRoutine());
+
+            moveSpeed += 0.5f;
+
+            return false;
+        }
+
+        // Monster dies
         chasing = false;
         player = null;
-        model.DOKill();       // Kill every tween on the model
-        transform.DOKill();   // Kill every tween on the root
-        smoke.transform.SetParent(null); // Smoke stays behind
+        
+        if (animator != null)
+        {
+            animator.SetBool("Chasing", false);
+            animator.SetTrigger("Die");
+        }
+
+        StartCoroutine(DeathRoutine());
+        return true;
+    }
+
+    IEnumerator ResumeChaseRoutine()
+    {
+        yield return new WaitForSeconds(0.8f);
+
+        if (photosRemaining > 0)
+        {
+            chasing = true;
+
+            if (animator != null)
+                animator.SetBool("Chasing", true);
+        }
+    }
+    IEnumerator DeathRoutine()
+    {
+        // Wait for the death animation
+        yield return new WaitForSeconds(1.5f);
+
+        model.DOKill();
+        transform.DOKill();
+
+        smoke.transform.SetParent(null);
         smoke.Play();
         smoke.transform.DOKill();
         Destroy(smoke.gameObject, 1f);
 
         StartCoroutine(DisappearRoutine());
     }
-
     IEnumerator DisappearRoutine()
     {
         float interval = 0.06f;
@@ -158,5 +250,64 @@ public class Monster : MonoBehaviour
         yield return new WaitForSeconds(0.15f);
         transform.DOKill();
         Destroy(gameObject);
+    }
+
+    IEnumerator AttackRoutine()
+    {
+        attacking = true;
+        chasing = false;
+
+        if (animator != null)
+        {
+            animator.SetBool("Chasing", false);
+            animator.SetTrigger("Attack");
+        }
+
+        yield return new WaitForSeconds(0.9f); // Match your attack animation length
+
+        if (Vector3.Distance(transform.position, player.position) > attackRange)
+        {
+            attackTimer = attackCooldown;
+            attacking = false;
+
+            chasing = true;
+            animator.SetBool("Chasing", true);
+
+            yield break;
+        }
+
+        PlayerLives lives = player.GetComponent<PlayerLives>();
+
+        if (lives != null)
+        {
+            if (lives.TakeHit())
+            {
+                CharacterController controller =
+                    player.GetComponent<CharacterController>();
+
+                if (controller != null)
+                    controller.enabled = false;
+
+                player.position = respawnPoint.position;
+                player.rotation = respawnPoint.rotation;
+
+                if (controller != null)
+                    controller.enabled = true;
+
+                StopChasing();
+
+                yield break;
+            }
+        }
+
+        attackTimer = attackCooldown;
+
+        attacking = false;
+
+        if (photosRemaining > 0)
+        {
+            chasing = true;
+            animator.SetBool("Chasing", true);
+        }
     }
 }

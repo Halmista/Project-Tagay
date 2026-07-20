@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class PhoneManager : MonoBehaviour
 {
+    public Sprite junBackground;
+    public Sprite unknownBackground;
     public GameObject phoneUI;
     public static PhoneManager Instance;
     public Transform content;          // The Content object in the Scroll View

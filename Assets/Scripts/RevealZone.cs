@@ -3,6 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum HideAnimation
+{
+    Sink,
+    FlickerDisappear
+}
+
 public class RevealZone : MonoBehaviour
 {
     Dictionary<GameObject, Vector3> originalPositions = new();
@@ -11,11 +17,17 @@ public class RevealZone : MonoBehaviour
     [Header("Show when camera is open")]
     public GameObject[] revealObjects;
 
+    [Header("Hide Animation")]
+    public HideAnimation hideAnimation = HideAnimation.Sink;
+
     [Header("Hide when camera is open")]
     public GameObject[] hideObjects;
 
     bool playerInside;
     bool lastRevealState;
+    bool lockReveal;
+
+    public System.Action OnReveal;
 
     void Start()
     {
@@ -37,12 +49,16 @@ public class RevealZone : MonoBehaviour
 
     void Update()
     {
-        bool reveal = playerInside && CameraManager.Instance.CameraOpen;
+        bool reveal = lockReveal || (playerInside && CameraManager.Instance.CameraOpen);
 
         if (reveal == lastRevealState)
             return;
 
         lastRevealState = reveal;
+        if (reveal)
+        {
+            OnReveal?.Invoke();
+        }
 
         foreach (GameObject obj in revealObjects)
         {
@@ -67,6 +83,11 @@ public class RevealZone : MonoBehaviour
         {
             obj.SetActive(true);
 
+            Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+
+            foreach (Renderer r in renderers)
+                r.enabled = true;
+
             obj.transform.position = hidden;
             obj.transform.localScale = originalScales[obj] * 0.98f;
 
@@ -78,29 +99,21 @@ public class RevealZone : MonoBehaviour
         }
         else
         {
-            StartCoroutine(HideRoutine(obj, hidden));
+            switch (hideAnimation)
+            {
+                case HideAnimation.Sink:
+                    StartCoroutine(HideRoutine(obj, hidden));
+                    break;
+
+                case HideAnimation.FlickerDisappear:
+                    StartCoroutine(FlickerDisappearRoutine(obj));
+                    break;
+            }
         }
     }
 
     IEnumerator HideRoutine(GameObject obj, Vector3 hidden)
     {
-        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
-
-        // Flicker 3 times
-        for (int i = 0; i < 3; i++)
-        {
-            foreach (Renderer r in renderers)
-                r.enabled = false;
-
-            yield return new WaitForSeconds(0.04f);
-
-            foreach (Renderer r in renderers)
-                r.enabled = true;
-
-            yield return new WaitForSeconds(0.04f);
-        }
-
-        // Sink into the ground
         Sequence seq = DOTween.Sequence();
 
         seq.Join(
@@ -142,6 +155,38 @@ public class RevealZone : MonoBehaviour
                 );
             }
         }
+    }
+
+    IEnumerator FlickerDisappearRoutine(GameObject obj)
+    {
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+
+        // Randomize so groups don't disappear simultaneously
+        yield return new WaitForSeconds(Random.Range(0f, 0.25f));
+
+        // Flicker 4 times
+        for (int i = 0; i < 4; i++)
+        {
+            bool visible = (i % 2 == 0);
+
+            foreach (Renderer r in renderers)
+                r.enabled = visible;
+
+            yield return new WaitForSeconds(Random.Range(0.04f, 0.08f));
+        }
+
+        // Final disappearance
+        foreach (Renderer r in renderers)
+            r.enabled = false;
+
+        yield return new WaitForSeconds(0.05f);
+
+        obj.SetActive(false);
+    }
+
+    public void LockReveal()
+    {
+        lockReveal = true;
     }
     void OnTriggerEnter(Collider other)
     {
