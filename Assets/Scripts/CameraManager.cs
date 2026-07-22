@@ -8,6 +8,7 @@ public class CameraManager : MonoBehaviour
     public LayerMask photoLayer;
     public static CameraManager Instance;
     public Camera playerCamera;
+    DogPatrolBehaviour currentDog;
     //public LayerMask monsterLayer;
     public CanvasGroup flash;
     public CanvasGroup phoneFrame;
@@ -77,6 +78,8 @@ public class CameraManager : MonoBehaviour
 
         if (CameraOpen)
         {
+            
+            DetectDogTarget();
             UpdateFocus();
         }
         if (CameraOpen && Input.GetMouseButtonDown(0))
@@ -172,9 +175,8 @@ public class CameraManager : MonoBehaviour
 
         if (Physics.Raycast(ray, out RaycastHit hit, photoRange, photoLayer))
         {
-            PhotoTarget target = hit.collider.GetComponent<PhotoTarget>();
-
-            if (target != null)
+            
+            if (hit.collider.TryGetComponent<PhotoTarget>(out var target))
             {
                 whiteFocus.SetActive(false);
                 redFocus.SetActive(true);
@@ -188,6 +190,34 @@ public class CameraManager : MonoBehaviour
 
         whiteFocus.SetActive(true);
         redFocus.SetActive(false);
+    }
+
+    void DetectDogTarget()
+    {
+        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f));
+
+        if (Physics.Raycast(ray, out RaycastHit hit, photoRange, photoLayer))
+        {
+            DogPatrolBehaviour dog =
+                hit.collider.GetComponentInParent<DogPatrolBehaviour>();
+
+            if (dog != null)
+            {
+                if (dog != currentDog)
+                {
+                    currentDog = dog;
+                    dog.Alert();
+                }
+            }
+            else
+            {
+                currentDog = null;
+            }
+        }
+        else
+        {
+            currentDog = null;
+        }
     }
     void Flash()
     {
@@ -220,22 +250,35 @@ public class CameraManager : MonoBehaviour
             ToggleCamera();
             return;
         }
+
         Flash();
 
         Ray ray = playerCamera.ViewportPointToRay(
-                new Vector3(0.5f, 0.5f));
+            new Vector3(0.5f, 0.5f));
 
         if (Physics.Raycast(ray, out RaycastHit hit, photoRange, photoLayer))
         {
+            Debug.Log("Hit: " + hit.collider.name);
+
+            DogPatrolBehaviour patrol =
+                hit.collider.GetComponentInParent<DogPatrolBehaviour>();
+
+            if (patrol != null)
+            {
+                Debug.Log("Found patrol!");
+                patrol.Alert();
+            }
+            else
+            {
+                Debug.Log("No patrol found.");
+            }
+
+            // Existing photo logic
             PhotoTarget target = hit.collider.GetComponent<PhotoTarget>();
 
             if (target != null)
                 target.Photograph();
         }
-        //if (currentTarget != null)
-        //{
-        //    currentTarget.Disperse();
-        //}
     }
 
     void UpdateBatteryUI()

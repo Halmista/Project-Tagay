@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class IntroMessages : MonoBehaviour
 {
+    public static IntroMessages Instance;
+
     public FirstPersonController player;
+
     [System.Serializable]
     public class IntroMessage
     {
@@ -21,14 +24,27 @@ public class IntroMessages : MonoBehaviour
     [TextArea]
     public string startingObjectiveText;
 
+    void Awake()
+    {
+        Instance = this;
+    }
+
     IEnumerator Start()
     {
+        yield return PlayIntro();
+    }
+
+    public IEnumerator PlayIntro()
+    {
         player.SetMovement(false);
+
         foreach (IntroMessage msg in messages)
         {
             PhoneManager.Instance.ReceiveMessage(msg.text);
-            NotificationManager.Instance.ShowNotification(msg.text,
-            NotificationSender.Jun);
+
+            NotificationManager.Instance.ShowNotification(
+                msg.text,
+                NotificationSender.Jun);
 
             yield return new WaitForSeconds(msg.delayAfter);
         }

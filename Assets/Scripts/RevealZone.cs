@@ -13,6 +13,7 @@ public class RevealZone : MonoBehaviour
 {
     Dictionary<GameObject, Vector3> originalPositions = new();
     Dictionary<GameObject, Vector3> originalScales = new();
+    
 
     [Header("Show when camera is open")]
     public GameObject[] revealObjects;
@@ -23,11 +24,12 @@ public class RevealZone : MonoBehaviour
     [Header("Hide when camera is open")]
     public GameObject[] hideObjects;
 
+    bool permanentlyHidden;
     bool playerInside;
     bool lastRevealState;
-    bool lockReveal;
+    //bool lockReveal;
 
-    public System.Action OnReveal;
+    //public System.Action OnReveal;
 
     void Start()
     {
@@ -49,16 +51,18 @@ public class RevealZone : MonoBehaviour
 
     void Update()
     {
-        bool reveal = lockReveal || (playerInside && CameraManager.Instance.CameraOpen);
+        bool reveal =
+          (playerInside && CameraManager.Instance.CameraOpen);
 
         if (reveal == lastRevealState)
             return;
 
         lastRevealState = reveal;
-        if (reveal)
-        {
-            OnReveal?.Invoke();
-        }
+
+        //if (reveal)
+        //{
+        //    OnReveal?.Invoke();
+        //}
 
         foreach (GameObject obj in revealObjects)
         {
@@ -66,10 +70,20 @@ public class RevealZone : MonoBehaviour
                 FadeObject(obj, reveal);
         }
 
-        foreach (GameObject obj in hideObjects)
-        {
-            if (obj != null)
+        foreach(GameObject obj in hideObjects)
+           {
+            if (obj == null)
+                continue;
+
+            if (permanentlyHidden)
+            {
+                if (obj.activeSelf)
+                    obj.SetActive(false);
+            }
+            else
+            {
                 AnimateHideObject(obj, !reveal);
+            }
         }
     }
     void AnimateHideObject(GameObject obj, bool visible)
@@ -184,10 +198,13 @@ public class RevealZone : MonoBehaviour
         obj.SetActive(false);
     }
 
-    public void LockReveal()
+    public void PermanentlyHide()
     {
-        lockReveal = true;
+        permanentlyHidden = true;
     }
+
+   
+
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))

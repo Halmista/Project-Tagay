@@ -7,9 +7,13 @@ public class WolfEncounterTrigger : MonoBehaviour
 
     public Monster wolfMonster;
 
-    public RevealZone revealZone;
+    //public RevealZone revealZone;
+
+    bool explainedThreeShots;
 
     bool triggered;
+
+    public DogPatrolBehaviour dogBehaviour;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -29,35 +33,43 @@ public class WolfEncounterTrigger : MonoBehaviour
         // Stop the player for a moment
         player.SetMovement(false);
 
+        //wolfMonster.SetPhotographable(false);
+
         DialogueManager.Instance.Say("...");
+
+        yield return new WaitForSeconds(2f);
+
+        DialogueManager.Instance.Say("Putangina, ano na naman ito?");
 
         yield return new WaitForSeconds(2f);
 
         player.SetMovement(true);
 
-        if (revealZone != null)
-            revealZone.OnReveal += RevealWolf;
-
         ObjectiveManager.Instance.SetObjective(
-            "PhotographWolf",
-            "Drive away the creature."
+            "ObserveWolf",
+            "Observe the monster."
         );
-    }
-
-    void RevealWolf()
-    {
-        if (revealZone != null)
-            revealZone.OnReveal -= RevealWolf;
 
         StartCoroutine(StartWolf());
     }
 
+    /*void RevealWolf()
+    {
+        Debug.Log("RevealWolf called");
+        if (revealZone != null)
+            revealZone.OnReveal -= RevealWolf;
+
+        StartCoroutine(StartWolf());
+    }*/
+
     IEnumerator StartWolf()
     {
         yield return new WaitForSeconds(1f);
+        StoryManager.Instance.TriggerEvent("WolfEncounter");
+        dogBehaviour.ResumePatrol();
 
-        wolfMonster.SetPhotographable(true);
-
-        wolfMonster.StartChasing(player.transform);
+        
     }
+
+
 }

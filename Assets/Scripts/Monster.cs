@@ -1,7 +1,16 @@
 using DG.Tweening;
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEngine;
+using UnityEngine.AI;
+using static UnityEngine.Rendering.DebugUI.Table;
+
+public enum MovementType
+{
+    Floating,
+    NavMesh
+}
 
 public class Monster : MonoBehaviour
 {
@@ -14,6 +23,7 @@ public class Monster : MonoBehaviour
     public Renderer[] renderers;
     public static List<Monster> ActiveMonsters = new();
     Animator animator;
+    public Animator Animator => animator;
 
     public Transform model;
     private Vector3 originalLocalPos;
@@ -32,60 +42,92 @@ public class Monster : MonoBehaviour
     private float twitchTimer;
     private Vector3 visualOffset;
 
-    [Header("Photography")]
-    public bool canBePhotographed = true;
+    [SerializeField]
+    private bool canBePhotographed = true;
+
+    public bool CanBePhotographed => canBePhotographed;
     public int photosRemaining = 3;
+
 
     [Header("Attack")]
     public bool usesAttack = false;
-    public float attackRange = 1.8f;
-    public float attackCooldown = 2f;
 
+    public float stoppingDistance = 2f;   // Where the dog stops
+    public float attackRange = 1f;        // Actual bite distance
+
+    public float attackCooldown = 2f;
     float attackTimer;
     bool attacking;
 
-    
+    public MovementType movementType = MovementType.Floating;
+
+    NavMeshAgent agent;
     void Start()
     {
+
         baseY = transform.position.y;
         originalLocalPos = model.localPosition;
         animator = model.GetComponent<Animator>();
+
+        if (movementType == MovementType.NavMesh)
+        {
+            agent = GetComponent<NavMeshAgent>();
+
+            if (agent == null)
+            {
+                Debug.LogError($"{name} has MovementType.NavMesh but no NavMeshAgent component!");
+                enabled = false;
+                return;
+            }
+
+            agent.speed = moveSpeed;
+            agent.updateRotation = true;
+
+            agent.angularSpeed = 540f;
+            if (!GetComponent<DogPatrolBehaviour>())
+                agent.isStopped = true;
+        }
+
     }
 
     void Update()
     {
+       
         UpdateTwitch();
 
         if (!chasing || player == null)
             return;
 
-        if (usesAttack)
+        attackTimer -= Time.deltaTime;
+
+        if (movementType == MovementType.Floating)
         {
-            attackTimer -= Time.deltaTime;
+            Vector3 target = player.position;
+            target.y = baseY;
 
-            float distance = Vector3.Distance(transform.position, player.position);
+            transform.position = Vector3.MoveTowards(
+                transform.position,
+                target,
+                moveSpeed * Time.deltaTime);
 
-            if (distance <= attackRange)
+            transform.LookAt(player);
+        }
+        else if (movementType == MovementType.NavMesh && agent != null)
+        {
+            agent.stoppingDistance = stoppingDistance;
+
+            agent.SetDestination(player.position);
+
+            if (usesAttack &&
+                !attacking &&
+                attackTimer <= 0f &&
+                !agent.pathPending &&
+                agent.hasPath &&
+                agent.remainingDistance <= stoppingDistance)
             {
-                if (!attacking && attackTimer <= 0f)
-                    StartCoroutine(AttackRoutine());
-
-                return;
+                StartCoroutine(AttackRoutine());
             }
         }
-        Vector3 target = player.position;
-        target.y = baseY;
-
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            target,
-            moveSpeed * Time.deltaTime);
-
-        Vector3 pos = transform.position;
-        //pos.y = baseY + Mathf.Sin(Time.time * floatSpeed) * floatHeight;
-
-        transform.LookAt(player);
-
     }
 
     void UpdateTwitch()
@@ -115,8 +157,8 @@ public class Monster : MonoBehaviour
             twitchTimer = 0;
 
             Vector3 randomOffset =
-                 transform.right * Random.Range(-1f, 1f) * strength +
-                 transform.up * Random.Range(-0.2f, 0.2f) * strength;
+                 Random.Range(-1f, 1f) * strength * transform.right +
+                 Random.Range(-0.2f, 0.2f) * strength * transform.up;
 
             randomOffset.y *= 0.3f;
 
@@ -132,8 +174,16 @@ public class Monster : MonoBehaviour
 
     public void StartChasing(Transform target)
     {
+        Debug.Log("Monster started chasing.");
+        //agent.isStopped = false;
         player = target;
         chasing = true;
+
+        if (movementType == MovementType.NavMesh && agent != null)
+        {
+            Debug.Log("Using NavMesh");
+            agent.isStopped = false;
+        }
 
         if (animator != null)
             animator.SetBool("Chasing", true);
@@ -144,12 +194,17 @@ public class Monster : MonoBehaviour
         chasing = false;
         player = null;
 
+        attacking = false;
+        attackTimer = attackCooldown;
+
         if (animator != null)
             animator.SetBool("Chasing", false);
     }
+
     public void SetPhotographable(bool value)
     {
         canBePhotographed = value;
+        Debug.Log($"{name} canBePhotographed = {value}\n{System.Environment.StackTrace}");
     }
     void OnEnable()
     {
@@ -162,10 +217,22 @@ public class Monster : MonoBehaviour
     }
     public bool Disperse()
     {
+        Debug.Log("Disperse called");
         if (!canBePhotographed)
+        {
+            Debug.Log("Cannot be photographed");
             return false;
+        }
+
 
         photosRemaining--;
+
+        if (photosRemaining == 2)
+        {
+            DialogueManager.Instance.Say(
+                "Hindi tumalab?! Kailangan ko pa siyang kuhanan!"
+            );
+        }
         Debug.Log("Monster photographed. Photos remaining: " + photosRemaining);
         // Monster survives
         if (photosRemaining > 0)
@@ -183,13 +250,16 @@ public class Monster : MonoBehaviour
 
             moveSpeed += 0.5f;
 
+            if (movementType == MovementType.NavMesh && agent != null)
+                agent.speed = moveSpeed;
+
             return false;
         }
 
         // Monster dies
         chasing = false;
         player = null;
-        
+
         if (animator != null)
         {
             animator.SetBool("Chasing", false);
@@ -208,8 +278,15 @@ public class Monster : MonoBehaviour
         {
             chasing = true;
 
+            if (movementType == MovementType.NavMesh)
+                agent.isStopped = false;
+
             if (animator != null)
+            {
                 animator.SetBool("Chasing", true);
+                animator.Play("Chasing");
+            }
+
         }
     }
     IEnumerator DeathRoutine()
@@ -257,6 +334,11 @@ public class Monster : MonoBehaviour
         attacking = true;
         chasing = false;
 
+        if (movementType == MovementType.NavMesh)
+        {
+            agent.isStopped = true;
+        }
+
         if (animator != null)
         {
             animator.SetBool("Chasing", false);
@@ -265,7 +347,9 @@ public class Monster : MonoBehaviour
 
         yield return new WaitForSeconds(0.9f); // Match your attack animation length
 
-        if (Vector3.Distance(transform.position, player.position) > attackRange)
+        if (movementType == MovementType.NavMesh)
+            agent.isStopped = false;
+        if (agent.remainingDistance > agent.stoppingDistance)
         {
             attackTimer = attackCooldown;
             attacking = false;
@@ -288,13 +372,30 @@ public class Monster : MonoBehaviour
                 if (controller != null)
                     controller.enabled = false;
 
-                player.position = respawnPoint.position;
-                player.rotation = respawnPoint.rotation;
+                player.SetPositionAndRotation(
+                    respawnPoint.position,
+                    respawnPoint.rotation);
 
                 if (controller != null)
                     controller.enabled = true;
 
-                StopChasing();
+                attacking = false;
+                chasing = false;
+                attackTimer = attackCooldown;
+
+                if (movementType == MovementType.NavMesh)
+                    agent.isStopped = false;
+
+                DogPatrolBehaviour patrol = GetComponent<DogPatrolBehaviour>();
+
+                if (patrol != null)
+                {
+                    patrol.ResumePatrol();
+                }
+                else
+                {
+                    StopChasing();
+                }
 
                 yield break;
             }
@@ -309,5 +410,18 @@ public class Monster : MonoBehaviour
             chasing = true;
             animator.SetBool("Chasing", true);
         }
+
+        if (movementType == MovementType.NavMesh)
+            agent.isStopped = false;
+    }
+
+    IEnumerator ResumeAfterRespawn()
+    {
+        yield return new WaitForSeconds(6f);   // Give the player breathing room
+
+        if (photosRemaining <= 0)
+            yield break;
+
+        StartChasing(GameObject.FindGameObjectWithTag("Player").transform);
     }
 }

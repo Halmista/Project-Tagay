@@ -1,3 +1,4 @@
+using TMPro;
 using DG.Tweening;
 using System.Collections;
 using Unity.VisualScripting.Dependencies.Sqlite;
@@ -23,13 +24,28 @@ public class StoryManager : MonoBehaviour
     [Header("House Horror")]
     public GameObject oldManGhost;
     public LightFlicker houseLight;
+    public GameObject roadBlock;
 
     [Header("Body Bag Encounter")]
     public GameObject bodyBag;
     //public Monster wormMonster;
     public ParticleSystem bodyBagSmoke;
 
+    [Header("Jun Reveal")]
+    public GameObject junCorpse;
+    public Light spotlight;
+    public LightFlicker endingSpotlight;
+
+    [Header("Ending")]
+    public CanvasGroup fadeCanvas;
+    public Transform startingCheckpoint;
+
     public Transform currentCheckpoint;
+
+    public Transform dogCheckpoint;
+    public Monster wolfMonster;
+
+    public TMP_Text endingText;
 
     void Awake()
     {
@@ -47,6 +63,8 @@ public class StoryManager : MonoBehaviour
 
     public void TriggerEvent(string eventName)
     {
+        Debug.Log("TriggerEvent: " + eventName);
+
         switch (eventName)
         {
             case "MangNestorArrival":
@@ -71,6 +89,10 @@ public class StoryManager : MonoBehaviour
 
             case "MarkHouseConversation":
                 StartCoroutine(MarkHouseConversation());
+                break;
+
+            case "WolfEncounter":
+                StartCoroutine(WolfEncounter());
                 break;
         }
     }
@@ -112,6 +134,10 @@ public class StoryManager : MonoBehaviour
             case "PhotographCrowd":
                 StartCoroutine(CrowdRevealSequence());
                 break;
+
+            case "PhotographTable":
+                StartCoroutine(JunReveal());
+                break;
         }
     }
 
@@ -125,7 +151,7 @@ public class StoryManager : MonoBehaviour
            "Napasa mo na ba yung listahan mo?"
        , NotificationSender.Unknown);
 
-        yield return new WaitForSeconds(4f);
+        yield return new WaitForSeconds(2f);
 
         PhoneManager.Instance.ReceiveMessage(
             "Bukas ka na ba dadating? Haha.");
@@ -146,13 +172,13 @@ public class StoryManager : MonoBehaviour
         DialogueManager.Instance.Say(
            "Kulit nito ni Jun.");
 
-        yield return new WaitForSeconds(1f);
-        DialogueManager.Instance.Say(
-           "Shet, nakalimutan ko yung powerbank pala.");
+        //yield return new WaitForSeconds(1f);
+        //DialogueManager.Instance.Say(
+        //   "Shet, nakalimutan ko yung powerbank pala.");
         
-        yield return new WaitForSeconds(1f);
-        DialogueManager.Instance.Say(
-           "Ambilis pa naman ma-drain ng battery ng phone ko.");
+        //yield return new WaitForSeconds(1f);
+       // DialogueManager.Instance.Say(
+        //   "Ambilis pa naman ma-drain ng battery ng phone ko.");
 
         yield return new WaitForSeconds(1f);
         DialogueManager.Instance.Say(
@@ -295,11 +321,11 @@ public class StoryManager : MonoBehaviour
         yield return new WaitForSeconds(3f);
 
         PhoneManager.Instance.ReceiveMessage(
-            "Ayos ka lang? Na kina Mang Nestor ka na?"
+            "Na kina Mang Nestor ka na?"
         );
 
         NotificationManager.Instance.ShowNotification(
-            "Ayos ka lang? Na kina Mang Nestor ka na?"
+            "Na kina Mang Nestor ka na?"
         , NotificationSender.Jun);
 
         yield return new WaitForSeconds(2f);
@@ -339,7 +365,7 @@ public class StoryManager : MonoBehaviour
         yield return new WaitForSeconds(3f);
 
         DialogueManager.Instance.Say(
-            "Mukhang bukas naman..."
+            "Bukas yung pinto niya..."
         );
 
         yield return new WaitForSeconds(2f);
@@ -403,11 +429,6 @@ public class StoryManager : MonoBehaviour
 
     IEnumerator HouseRevealSequence()
     {
-        yield return new WaitForSeconds(1f);
-
-        DialogueManager.Instance.Say(
-            "..."
-        );
 
         yield return new WaitForSeconds(2f);
 
@@ -442,7 +463,7 @@ public class StoryManager : MonoBehaviour
         oldManGhost.SetActive(false);
 
         DialogueManager.Instance.Say(
-            "Mang Nestor...?"
+            "Mang Nestor...?!"
         );
 
         yield return new WaitForSeconds(3f);
@@ -470,13 +491,9 @@ public class StoryManager : MonoBehaviour
         DialogueManager.Instance.Say(
             "Na-malikmata lang ba ako...?"
         );
+        
         yield return new WaitForSeconds(3f);
-
-        DialogueManager.Instance.Say(
-           "Pero nandito pa rin yung mga dugo...?"
-       );
-        yield return new WaitForSeconds(3f);
-
+        roadBlock.SetActive(false);
         PhoneManager.Instance.ReceiveMessage(
             "Pwede ka bang kumatok kina Mark?"
         );
@@ -611,7 +628,7 @@ public class StoryManager : MonoBehaviour
         player.SetMovement(false);
 
         DialogueManager.Instance.Say(
-            "Anong nangyayari?"
+            "..."
             );
 
         bodyBag.transform.DOPunchRotation(
@@ -666,7 +683,7 @@ public class StoryManager : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         DialogueManager.Instance.Say(
-         "...Ilusyon lang yun, Ariel."
+            "Kalma, Ariel...ilusyon lang yun."
          );
 
         PhoneManager.Instance.ReceiveMessage(
@@ -708,13 +725,13 @@ public class StoryManager : MonoBehaviour
         yield return new WaitForSeconds(3f);
 
         DialogueManager.Instance.Say(
-            "Birthday ni Jun... hinahanap po siya."
+            "Birthday ni Jun... hinahanap po siya sa inuman."
         );
 
         yield return new WaitForSeconds(3f);
 
         DialogueManager.Instance.Say(
-            "Ate Baby:..."
+            "Ate Baby: ..."
         );
 
         yield return new WaitForSeconds(2f);
@@ -729,22 +746,16 @@ public class StoryManager : MonoBehaviour
             "Ate Baby: Matagal nang wala si Mark."
         );
 
-        yield return new WaitForSeconds(3f);
-
-        DialogueManager.Instance.Say(
-            "Ha?"
-        );
-
         yield return new WaitForSeconds(1.5f);
 
         DialogueManager.Instance.Say(
-            "Ano pong ibig sabihin ninyo?"
+            "Wala na si Mark??"
         );
 
         yield return new WaitForSeconds(2f);
 
         DialogueManager.Instance.Say(
-            "Wala na si Mark?"
+            "Kelan pa po?"
         );
 
         yield return new WaitForSeconds(2f);
@@ -785,10 +796,10 @@ public class StoryManager : MonoBehaviour
         yield return new WaitForSeconds(2.5f);
 
         PhoneManager.Instance.ReceiveMessage(
-            "Bakit kaya nandito sila?"
+            "Bakit nandito sila?"
         );
         NotificationManager.Instance.ShowNotification(
-            "Bakit kaya nandito sila?",
+            "Bakit nandito sila?",
             NotificationSender.Jun);
 
         yield return new WaitForSeconds(3f);
@@ -831,5 +842,189 @@ public class StoryManager : MonoBehaviour
             if (light != null)
                 light.enabled = false;
         }
+    }
+    /*
+#if UNITY_EDITOR
+    [ContextMenu("DEBUG - Dog Encounter")]
+    public void DebugDogEncounter()
+    {
+        StopAllCoroutines();
+
+        CharacterController cc = player.GetComponent<CharacterController>();
+
+        if (cc != null)
+            cc.enabled = false;
+
+        player.transform.SetPositionAndRotation(
+            dogCheckpoint.position,
+            dogCheckpoint.rotation);
+
+        if (cc != null)
+            cc.enabled = true;
+
+        ObjectiveManager.Instance.SetObjective(
+            "PhotographWolf",
+            "Drive away the creature using your camera."
+        );
+
+        wolfMonster.SetPhotographable(true);
+        wolfMonster.StartChasing(player.transform);
+    }
+#endif
+    */
+    IEnumerator WolfEncounter()
+    {
+        Debug.Log("WolfEncounter coroutine started");
+        DialogueManager.Instance.Say(
+          "Parang binibisita niya yung mga pinto."
+         );
+        yield return new WaitForSeconds(1.5f);
+        DialogueManager.Instance.Say(
+          "Baka pwede ko siyang lagpasan."
+         );
+        // Give the player time to look at the dog.
+        yield return new WaitForSeconds(2f);
+
+        ObjectiveManager.Instance.SetObjective(
+            "WalkPastWolf",
+            "Carefully walk past the creature without using your camera."
+        );
+    }
+
+    IEnumerator JunReveal()
+    {
+        player.SetMovement(false);
+
+        yield return new WaitForSeconds(1.5f);
+
+        DialogueManager.Instance.Say(
+           "Jun: Antagal mo."
+        );
+
+        yield return new WaitForSeconds(2f);
+
+        DialogueManager.Instance.Say(
+            "Jun: Ayan na parte mo."
+        );
+
+        yield return new WaitForSeconds(2f);
+
+        DialogueManager.Instance.Say(
+            "Jun: Tagay."
+        );
+
+        yield return new WaitForSeconds(2f);
+
+
+        // Flicker before Jun appears
+        StartCoroutine(endingSpotlight.ScareFlicker());
+
+        yield return new WaitForSeconds(0.8f);
+
+        // Fade Jun in
+        junCorpse.SetActive(true);
+        
+        //StartCoroutine(endingSpotlight.ScareFlicker());
+
+        yield return new WaitForSeconds(3f);
+
+        DialogueManager.Instance.Say(
+            "..."
+        );
+
+        yield return new WaitForSeconds(2f);
+
+        DialogueManager.Instance.Say(
+            "Jun: Bakit, Ariel?"
+        );
+
+        yield return new WaitForSeconds(2.5f);
+        
+        DialogueManager.Instance.Say(
+           "Jun: Bakit mo kami binenta?"
+        );
+
+        yield return new WaitForSeconds(2.5f);
+
+        DialogueManager.Instance.Say(
+            "Hindi..."
+        );
+
+        yield return new WaitForSeconds(2f);
+
+        DialogueManager.Instance.Say(
+            "Sorry! Hindi ko alam na magiging ganito!"
+        );
+        yield return new WaitForSeconds(2.5f);
+
+        DialogueManager.Instance.Say(
+            "Jun: Ariel. Alam mo."
+        );
+        yield return new WaitForSeconds(2f);
+        
+        DialogueManager.Instance.Say(
+            "Jun: Alam mo kung anong mangyayari."
+        );
+        yield return new WaitForSeconds(4f);
+
+        DialogueManager.Instance.Say(
+            "Sorry Jun!"
+        );
+
+        yield return new WaitForSeconds(2f);
+        StartCoroutine(endingSpotlight.ScareFlicker());
+
+        DialogueManager.Instance.Say(
+            "JUN!"
+        );
+
+        yield return new WaitForSeconds(2f);
+
+        yield return StartCoroutine(EndingSequence());
+        
+    }
+
+    IEnumerator EndingSequence()
+    {
+        player.SetMovement(false);
+
+
+        CharacterController cc =
+            player.GetComponent<CharacterController>();
+
+        if (cc != null)
+            cc.enabled = false;
+
+        player.transform.SetPositionAndRotation(
+            startingCheckpoint.position,
+            startingCheckpoint.rotation);
+
+        if (cc != null)
+            cc.enabled = true;
+        yield return new WaitForSeconds(1f);
+
+        yield return StartCoroutine(
+            IntroMessages.Instance.PlayIntro()
+        );
+
+        yield return new WaitForSeconds(1f);
+
+        DialogueManager.Instance.Say(
+            "Hindi..."
+        );
+
+        yield return new WaitForSeconds(2f);
+       
+        // Fade to black
+        yield return fadeCanvas
+            .DOFade(1f, 2f)
+            .WaitForCompletion();
+
+        endingText.gameObject.SetActive(true);
+        endingText.text = "Hustisya.";
+
+        yield return new WaitForSeconds(5f);
+
+        Application.Quit();
     }
 }

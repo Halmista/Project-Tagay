@@ -140,7 +140,7 @@ public class FirstPersonController : MonoBehaviour
         {
             speed *= cameraMoveMultiplier;
         }
-        controller.Move(move * speed * Time.deltaTime);
+        controller.Move(speed * Time.deltaTime * move);
 
         if (controller.isGrounded && velocity.y < 0)
             velocity.y = -2f;
