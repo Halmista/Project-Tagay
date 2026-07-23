@@ -718,6 +718,8 @@ public class StoryManager : MonoBehaviour
 
         yield return new WaitForSeconds(2f);
 
+        SoundManager.Instance.PlaySFX("DoorKnock");
+
         DialogueManager.Instance.Say(
             "Ate Baby... si Mark po?"
         );
@@ -748,6 +750,8 @@ public class StoryManager : MonoBehaviour
 
         yield return new WaitForSeconds(1.5f);
 
+        SoundManager.Instance.PlaySFX("HorrorStinger");
+
         DialogueManager.Instance.Say(
             "Wala na si Mark??"
         );
@@ -776,6 +780,8 @@ public class StoryManager : MonoBehaviour
         ObjectiveManager.Instance.CompleteObjective();
 
         yield return new WaitForSeconds(1f);
+
+        SoundManager.Instance.PlaySFX("PoliceSiren");
 
         PhoneManager.Instance.ReceiveMessage(
             "Pre... may dumating dito."

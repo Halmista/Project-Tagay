@@ -15,6 +15,7 @@ public class Flashlight : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F))
         {
             flashlight.enabled = !flashlight.enabled;
+            SoundManager.Instance.PlaySFX("Flashlight");
         }
     }
 }

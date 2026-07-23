@@ -13,7 +13,6 @@ public class RevealZone : MonoBehaviour
 {
     Dictionary<GameObject, Vector3> originalPositions = new();
     Dictionary<GameObject, Vector3> originalScales = new();
-    
 
     [Header("Show when camera is open")]
     public GameObject[] revealObjects;
@@ -27,9 +26,6 @@ public class RevealZone : MonoBehaviour
     bool permanentlyHidden;
     bool playerInside;
     bool lastRevealState;
-    //bool lockReveal;
-
-    //public System.Action OnReveal;
 
     void Start()
     {
@@ -51,18 +47,12 @@ public class RevealZone : MonoBehaviour
 
     void Update()
     {
-        bool reveal =
-          (playerInside && CameraManager.Instance.CameraOpen);
+        bool reveal = (playerInside && CameraManager.Instance.CameraOpen);
 
         if (reveal == lastRevealState)
             return;
 
         lastRevealState = reveal;
-
-        //if (reveal)
-        //{
-        //    OnReveal?.Invoke();
-        //}
 
         foreach (GameObject obj in revealObjects)
         {
@@ -70,8 +60,8 @@ public class RevealZone : MonoBehaviour
                 FadeObject(obj, reveal);
         }
 
-        foreach(GameObject obj in hideObjects)
-           {
+        foreach (GameObject obj in hideObjects)
+        {
             if (obj == null)
                 continue;
 
@@ -86,6 +76,7 @@ public class RevealZone : MonoBehaviour
             }
         }
     }
+
     void AnimateHideObject(GameObject obj, bool visible)
     {
         obj.transform.DOKill();
@@ -113,6 +104,16 @@ public class RevealZone : MonoBehaviour
         }
         else
         {
+            // Check if the object has renderers to animate
+            Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+
+            if (renderers.Length == 0)
+            {
+                // Trigger zones with no renderers are disabled directly
+                obj.SetActive(false);
+                return;
+            }
+
             switch (hideAnimation)
             {
                 case HideAnimation.Sink:
@@ -142,6 +143,7 @@ public class RevealZone : MonoBehaviour
 
         obj.SetActive(false);
     }
+
     void FadeObject(GameObject obj, bool visible)
     {
         Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
@@ -152,7 +154,6 @@ public class RevealZone : MonoBehaviour
             {
                 Color c = mat.color;
 
-                // Make sure the object is active before fading in
                 if (visible)
                     obj.SetActive(true);
 
@@ -165,8 +166,7 @@ public class RevealZone : MonoBehaviour
                 {
                     if (!visible)
                         obj.SetActive(false);
-                }
-                );
+                });
             }
         }
     }
@@ -175,10 +175,8 @@ public class RevealZone : MonoBehaviour
     {
         Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
 
-        // Randomize so groups don't disappear simultaneously
         yield return new WaitForSeconds(Random.Range(0f, 0.25f));
 
-        // Flicker 4 times
         for (int i = 0; i < 4; i++)
         {
             bool visible = (i % 2 == 0);
@@ -189,7 +187,6 @@ public class RevealZone : MonoBehaviour
             yield return new WaitForSeconds(Random.Range(0.04f, 0.08f));
         }
 
-        // Final disappearance
         foreach (Renderer r in renderers)
             r.enabled = false;
 
@@ -202,8 +199,6 @@ public class RevealZone : MonoBehaviour
     {
         permanentlyHidden = true;
     }
-
-   
 
     void OnTriggerEnter(Collider other)
     {

@@ -7,6 +7,10 @@ public class BodyBagBehaviour : MonoBehaviour
     bool squirming;
     public ParticleSystem smoke;
 
+    [Header("Audio Settings")]
+    [Tooltip("The ID defined in your SoundManager Sound Library for the garbage ruffle sound")]
+    public string ruffleSoundId = "GarbageRuffle";
+
     public void Squirm()
     {
         if (squirming)
@@ -20,6 +24,10 @@ public class BodyBagBehaviour : MonoBehaviour
         squirming = true;
 
         // ---------- Stage 1 : Small twitch ----------
+        // Play subtle SFX for the small twitch
+        if (SoundManager.Instance != null && !string.IsNullOrEmpty(ruffleSoundId))
+            SoundManager.Instance.PlaySFX(ruffleSoundId);
+
         Sequence stage1 = DOTween.Sequence();
 
         stage1.Append(
@@ -45,6 +53,10 @@ public class BodyBagBehaviour : MonoBehaviour
             smoke.Play();
 
         // ---------- Stage 2 : Violent struggle ----------
+        // Play SFX again for the intense struggle
+        if (SoundManager.Instance != null && !string.IsNullOrEmpty(ruffleSoundId))
+            SoundManager.Instance.PlaySFX(ruffleSoundId);
+
         Sequence stage2 = DOTween.Sequence();
 
         stage2.Append(

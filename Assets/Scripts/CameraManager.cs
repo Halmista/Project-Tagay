@@ -78,7 +78,6 @@ public class CameraManager : MonoBehaviour
 
         if (CameraOpen)
         {
-            
             DetectDogTarget();
             UpdateFocus();
         }
@@ -121,6 +120,7 @@ public class CameraManager : MonoBehaviour
 
         if (!CameraOpen)
         {
+            SoundManager.Instance.PlaySFX("PhoneHide");
             // Before lowering, make the frame visible again
             phoneFrame.alpha = 1f;
             gameplayDot.SetActive(true);
@@ -131,6 +131,7 @@ public class CameraManager : MonoBehaviour
         }
         else
         {
+            SoundManager.Instance.PlaySFX("PhoneGrab");
             gameplayDot.SetActive(false);
 
             whiteFocus.SetActive(true);
@@ -251,6 +252,7 @@ public class CameraManager : MonoBehaviour
             return;
         }
 
+        SoundManager.Instance.PlaySFX("CameraShutter");
         Flash();
 
         Ray ray = playerCamera.ViewportPointToRay(

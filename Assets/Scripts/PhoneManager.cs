@@ -35,6 +35,7 @@ public class PhoneManager : MonoBehaviour
         if (Input.GetKeyDown(toggleKey))
         {
             phoneUI.SetActive(!phoneUI.activeSelf);
+            SoundManager.Instance.PlaySFX("PhoneGrab");
 
             if (phoneUI.activeSelf)
             {
@@ -55,6 +56,9 @@ public class PhoneManager : MonoBehaviour
 
     public void ReceiveMessage(string message)
     {
+        SoundManager.Instance.PlaySFX("PhoneBuzz");
+        SoundManager.Instance.PlaySFX("SMS");
+
         Debug.Log("Received: " + message);
 
         GameObject msg = Instantiate(messagePrefab, content);
@@ -75,6 +79,7 @@ public class PhoneManager : MonoBehaviour
 
     public void HidePhone()
     {
+        SoundManager.Instance.PlaySFX("PhoneHide");
         phoneUI.SetActive(false);
     }
 }
